@@ -27,7 +27,6 @@ ws.addEventListener("close", () => {
   console.log("Web socket connection closed");
   setInterval(() => {
     ws = new WebSocket("/enter-game");
-
   }, 3000);
 });
 
@@ -61,8 +60,9 @@ board.addEventListener("mousemove", async (e) => {
   const boardBlob = await getBoardBlob();
 
   const boardDataObj = {
+    type: "board update",
     time: new Date().getTime(),
-    boardBlob: JSON.stringify(boardBlob),
+    boardBlob: await boardBlob.text(),
   };
 
   ws.send(JSON.stringify(boardDataObj));

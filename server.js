@@ -1,6 +1,6 @@
 const express = require("express");
 const morgan = require("morgan");
-const { nanoid } = require("nanoid");
+const { nanoid, customAlphabet } = require("nanoid");
 
 const app = express();
 const port = 3000;
@@ -11,7 +11,9 @@ const games = new Map();
 
 class Game {
   code;
-  constructor() {}
+  constructor(code) {
+    this.code = code;
+  }
 }
 
 class Player {
@@ -19,11 +21,10 @@ class Player {
   nick;
   order;
   points = 0;
+  gameCode;
 
   constructor(nickname, playerOrder) {
     this.nick = nickname;
-    this.id = String(playerOrder) + nanoid();
-    this.order = playerOrder;
   }
 }
 
@@ -74,11 +75,14 @@ app.route("/create-user").post((req, res) => {
 });
 
 app.ws("/enter-game", (ws, req) => {
+  const gameID = req.query.gameID;
+  const userID = req.query.userID;
+
   ws.on("connect", () => {
     console.log("connected !");
   });
-  ws.on("message", () => {
-    console.log("data recived");
+  ws.on("message", (message) => {
+    const msg = JSON.parse(message);
   });
 });
 
