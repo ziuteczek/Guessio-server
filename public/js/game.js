@@ -22,6 +22,10 @@ ws.addEventListener("open", () => {
   console.log("Web socket connection opened");
 });
 
+ws.addEventListener("message", () => {
+  
+});
+
 ws.addEventListener("close", () => {
   connectionOpened = false;
   console.log("Web socket connection closed");
@@ -67,28 +71,6 @@ board.addEventListener("mousemove", async (e) => {
 
   ws.send(JSON.stringify(boardDataObj));
 });
-
-// const createUser = async (nick, code) => {
-//   try {
-//     const data = await fetch(`create-user?nick=${nick}&code=${code}`, {
-//       method: "POST",
-//     });
-
-//     if (data.status !== 201) {
-//       throw new Error("fail");
-//     }
-
-//     const dataJSON = await data.json();
-
-//     if (dataJSON.status !== "succes") {
-//       throw new Error("fail");
-//     }
-
-//     return dataJSON;
-//   } catch (err) {
-//     return undefined;
-//   }
-// };
 
 async function joinGame(nick, gameCode) {
   const { userID, gameID } = await createUser(nick, gameCode);

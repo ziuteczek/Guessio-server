@@ -11,6 +11,7 @@ const games = new Map();
 
 class Game {
   code;
+  players = [];
   constructor(code) {
     this.code = code;
   }
@@ -22,8 +23,9 @@ class Player {
   order;
   points = 0;
   gameCode;
+  ws;
 
-  constructor(nickname, playerOrder) {
+  constructor(nickname) {
     this.nick = nickname;
   }
 }
@@ -46,6 +48,8 @@ app.route("/join").get(sendEmptyPage);
 app.route("/play").get(sendEmptyPage);
 
 app.route("/game").get(sendEmptyPage);
+
+app.route("/lobby").get(sendEmptyPage);
 
 app.route("/create-user").post((req, res) => {
   const nick = req.query.nick;
@@ -74,16 +78,25 @@ app.route("/create-user").post((req, res) => {
   res.status(201).json({ status: "succes", userID, gameID });
 });
 
+app.ws("/create-game", (ws, req) => {
+  ws.on("connect", () => {
+    const playerNick = req.query.nick;
+
+    const gameID = nanoid(6);
+    games.set(gameID, new Player(playerNick));
+  });
+});
+
 app.ws("/enter-game", (ws, req) => {
   const gameID = req.query.gameID;
   const userID = req.query.userID;
 
-  ws.on("connect", () => {
-    console.log("connected !");
-  });
-  ws.on("message", (message) => {
-    const msg = JSON.parse(message);
-  });
+  const game = games.get(gameID);
+
+  if (game === undefined) {
+    // error game ended
+    // return;
+  }
 });
 
 app.listen(port, () => console.log(`Server running on ${port}`));
