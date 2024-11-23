@@ -1,5 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
+
 const { nanoid, customAlphabet } = require("nanoid");
 
 const app = express();
@@ -34,28 +36,16 @@ app.use(morgan("dev"));
 
 app.use(express.urlencoded({ extended: true }));
 
-const sendEmptyPage = (req, res) =>
-  res.sendFile(`public/empty-page.html`, { root: __dirname });
-
 app.use(express.static("public"));
 
-app.route("/").get(sendEmptyPage);
-
-app.route("/index").get(sendEmptyPage);
-
-app.route("/join").get(sendEmptyPage);
-
-app.route("/play").get(sendEmptyPage);
-
-app.route("/game").get(sendEmptyPage);
-
-app.route("/lobby").get(sendEmptyPage);
+app.use(cors());
 
 app.route("/create-user").post((req, res) => {
   const nick = req.query.nick;
   const code = req.query.code;
 
   if (!nick || !code) {
+    console.log("no nick or code");
     res.status(400).json({
       status: "failed",
       message: "parameters not included in reqest",
@@ -64,7 +54,8 @@ app.route("/create-user").post((req, res) => {
     return;
   }
 
-  if (nick.length > 10 || code.length != 6) {
+  if (nick.length > 10 || code.length != 6 || nick.length < 3) {
+    console.log("wrong nick or code length");
     res
       .status(400)
       .json({ status: "failed", message: "parameters wrong length" });
@@ -72,31 +63,25 @@ app.route("/create-user").post((req, res) => {
     return;
   }
 
+  if (!games.has(code)) {
+    console.log("wrong nick or code length");
+    res.status(404).json({ status: "failed", message: "game doesn't exist" });
+    res.end();
+  }
+
   const userID = nanoid();
-  const gameID = nanoid();
 
-  res.status(201).json({ status: "succes", userID, gameID });
-});
-
-app.ws("/create-game", (ws, req) => {
-  ws.on("connect", () => {
-    const playerNick = req.query.nick;
-
-    const gameID = nanoid(6);
-    games.set(gameID, new Player(playerNick));
-  });
+  res.status(201).json({ status: "succes", userID });
 });
 
 app.ws("/enter-game", (ws, req) => {
-  const gameID = req.query.gameID;
-  const userID = req.query.userID;
+  console.log("web socket connection created");
 
-  const game = games.get(gameID);
+  ws.userID = req.query.userid;
+  ws.gameID = req.query.code;
 
-  if (game === undefined) {
-    // error game ended
-    // return;
-  }
+  console.log(ws.userID);
+  console.log(ws.gameID);
 });
 
 app.listen(port, () => console.log(`Server running on ${port}`));
