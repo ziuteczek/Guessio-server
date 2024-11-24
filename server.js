@@ -130,11 +130,12 @@ app.route("/create-user").post((req, res) => {
     return;
   }
 
-  // if (!games.has(code)) {
-  //   console.log("game does not exist");
-  //   res.status(404).json({ status: "failed", message: "game doesn't exist" });
-  //   res.end();
-  // }
+  if (!games.has(code)) {
+    console.log("game does not exist");
+    res.status(404).json({ status: "failed", message: "game doesn't exist" });
+    res.end();
+    return;
+  }
 
   const userID = nanoid();
 
