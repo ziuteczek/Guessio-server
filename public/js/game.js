@@ -8,12 +8,7 @@ let connectionOpened = false;
 
 console.log("Game script loaded");
 
-const getBoardBlob = async () => {
-  const blobBoardPromise = new Promise((resolve) => {
-    board.toBlob((blob) => resolve(blob), "image/jpeg");
-  });
-  return await blobBoardPromise;
-};
+
 
 let ws = new WebSocket("/enter-game");
 
