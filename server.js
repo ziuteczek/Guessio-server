@@ -17,9 +17,9 @@ class Game {
   board = "";
 
   data() {
-    const gameObj = { board: this.board };
+    const gameObj = { board: this.board, type: "update" };
 
-    gameObj.players = Array.from(this.players.values).map((player) => ({
+    gameObj.players = Array.from(this.players.values()).map((player) => ({
       nick: player.nick,
       points: player.points,
     }));
@@ -36,7 +36,7 @@ class Game {
         continue;
       }
 
-      player.ws.send();
+      player.ws.send(currentData);
     }
   }
 
@@ -48,7 +48,7 @@ class Game {
 }
 
 class Player {
-  id = "2137" /*nanoid()*/;
+  id = nanoid();
   nick;
   points = 0;
   ws;
@@ -158,9 +158,11 @@ app.ws("/enter-game", (ws, req) => {
   }
 
   const user = userGame.players.get(ws.userID);
+  console.log(userGame.players);
 
   if (user === undefined) {
     console.log("no such player");
+    console.log(ws.userID);
     ws.send(JSON.parse({ status: "failed", message: "no such player exist" }));
     ws.close();
   }
@@ -173,18 +175,22 @@ app.ws("/enter-game", (ws, req) => {
     const msg = JSON.parse(message);
 
     switch (msg.type) {
-      case "board update":
+      case "update":
         if (user.currentPainter) {
           break;
         }
 
         userGame.board = msg.boardBlob;
-        userGame.updateUsers(["2137"]);
+        userGame.updateUsers();
 
         break;
       default:
         console.log(msg.type);
     }
+  });
+
+  ws.on("close", () => {
+    console.log("web socket connection closed");
   });
 });
 
