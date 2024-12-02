@@ -18,6 +18,12 @@ class Game {
   players = new Map();
   board;
 
+  constructor() {
+    do {
+      this.code = nanoid(6);
+    } while (games.has(this.code));
+  }
+
   data() {
     const gameObj = {};
 
@@ -27,31 +33,25 @@ class Game {
     gameObj.players = Array.from(this.players.values()).map((player) => ({
       nick: player.nick,
       points: player.points,
-      isDrawing: player.isDrawing,
     }));
 
     return gameObj;
   }
 
   updateUsers(exclude = []) {
-    const playerIT = this.players.values();
-    const currentData = serialize(this.data());
+    const update = this.data();
 
-    console.log(deserialize(currentData));
+    const playerIT = this.players.values();
 
     for (const player of playerIT) {
       if (exclude.includes(player.id)) {
         continue;
       }
 
-      player.ws.send(currentData);
-    }
-  }
+      update.drawingMode = player.drawingMode;
 
-  constructor() {
-    do {
-      this.code = nanoid(6);
-    } while (games.has(this.code));
+      player.ws.send(serialize(update));
+    }
   }
 }
 
@@ -60,11 +60,12 @@ class Player {
   nick;
   points = 0;
   ws;
-  currentPainter = false;
-  isDrawing = false;
+  drawingMode = false;
+  game;
 
-  constructor(nickname) {
+  constructor(nickname, gameObj) {
     this.nick = nickname;
+    this.game = gameObj;
   }
 }
 
@@ -106,7 +107,10 @@ app.route("/create-game").post((req, res) => {
 
   const adminPlayer = new Player("admin");
   createGame.players.set(adminPlayer.id, adminPlayer);
-  createGame.res
+
+  adminPlayer.drawingMode = true;
+
+  res
     .status(201)
     .json({ status: "succes", userID: adminPlayer.id, code: createGame.code });
 });
@@ -164,7 +168,7 @@ app.ws("/enter-game", (ws, req) => {
     ws.close();
   }
 
-  const user = userGame.players.get(ws.userID);
+  const user = userGame.players.get(ws.userID, userGame);
 
   if (user === undefined) {
     console.log("no such player");
@@ -184,10 +188,6 @@ app.ws("/enter-game", (ws, req) => {
 
     switch (msg.type) {
       case "update":
-        if (user.currentPainter) {
-          break;
-        }
-
         userGame.board = msg.boardBlob;
 
         userGame.updateUsers();
