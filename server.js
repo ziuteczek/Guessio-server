@@ -2,6 +2,8 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 
+const { deserialize, serialize } = require("bson");
+
 const { nanoid, customAlphabet } = require("nanoid");
 
 const app = express();
@@ -14,14 +16,18 @@ const games = new Map();
 class Game {
   code;
   players = new Map();
-  board = "";
+  board;
 
   data() {
-    const gameObj = { board: this.board, type: "update" };
+    const gameObj = {};
+
+    gameObj.board = this.board;
+    gameObj.type = "update";
 
     gameObj.players = Array.from(this.players.values()).map((player) => ({
       nick: player.nick,
       points: player.points,
+      isDrawing: player.isDrawing,
     }));
 
     return gameObj;
@@ -29,7 +35,9 @@ class Game {
 
   updateUsers(exclude = []) {
     const playerIT = this.players.values();
-    const currentData = JSON.stringify(this.data());
+    const currentData = serialize(this.data());
+
+    console.log(deserialize(currentData));
 
     for (const player of playerIT) {
       if (exclude.includes(player.id)) {
@@ -53,15 +61,12 @@ class Player {
   points = 0;
   ws;
   currentPainter = false;
+  isDrawing = false;
 
   constructor(nickname) {
     this.nick = nickname;
   }
 }
-
-games.set("123456", new Game());
-const g = games.get("123456");
-g.players.set("2137", new Player("ziutek"));
 
 const nickCheck = (nick) => nick.length < 10 && nick.length > 3;
 const codeCheck = (code) => code.length === 6;
@@ -101,8 +106,7 @@ app.route("/create-game").post((req, res) => {
 
   const adminPlayer = new Player("admin");
   createGame.players.set(adminPlayer.id, adminPlayer);
-
-  res
+  createGame.res
     .status(201)
     .json({ status: "succes", userID: adminPlayer.id, code: createGame.code });
 });
@@ -176,7 +180,7 @@ app.ws("/enter-game", (ws, req) => {
   console.log("web socket connection created");
 
   ws.on("message", (message) => {
-    const msg = JSON.parse(message);
+    const msg = deserialize(message);
 
     switch (msg.type) {
       case "update":
@@ -185,6 +189,7 @@ app.ws("/enter-game", (ws, req) => {
         }
 
         userGame.board = msg.boardBlob;
+
         userGame.updateUsers();
 
         break;
