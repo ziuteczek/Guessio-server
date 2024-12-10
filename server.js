@@ -11,13 +11,10 @@ const joinGame = require("./join/joinGame");
 const createGame = require("./create/createGame");
 const createUser = require("./create/createUser");
 
-
 const app = express();
 const port = 4000;
 
 const expressWs = require("express-ws")(app);
-
-
 
 app.use(morgan("dev"));
 

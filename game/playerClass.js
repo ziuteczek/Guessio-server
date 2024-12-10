@@ -1,17 +1,19 @@
 const { nanoid } = require("nanoid");
 
 class Player {
-    id = nanoid();
-    nick;
-    points = 0;
-    ws;
-    drawingMode = false;
-    game;
+  id;
+  nick;
+  points = 0;
+  ws;
+  drawingMode = false;
+  game;
 
-    constructor(nickname, gameObj) {
-        this.nick = nickname;
-        this.game = gameObj;
-    }
+  constructor(nickname, gameObj) {
+    this.nick = nickname;
+    this.game = gameObj;
+    this.id = nanoid();
+    return this.id;
+  }
 }
 
-module.exports = Player;  
+module.exports = Player;
