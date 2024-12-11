@@ -40,6 +40,8 @@ const joinGame = (req, res) => {
   const newPlayer = new Player(nick);
   userGame.players.set(newPlayer.id, newPlayer);
 
-  res.status(201).json({ status: "succes", userID: newPlayer.id });
+  res
+    .status(201)
+    .json({ status: "succes", userID: newPlayer.id, code: userGame.code });
 };
 module.exports = joinGame;
