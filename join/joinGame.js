@@ -29,7 +29,8 @@ const joinGame = (ws, req) => {
   }
 
   user.ws = ws;
-
+  
+  console.log("users updated");
   userGame.updateUsers();
 
   console.log("web socket connection created");
@@ -38,11 +39,15 @@ const joinGame = (ws, req) => {
     const msg = deserialize(message);
 
     switch (msg.type) {
-      case "update":
+      case "board update":
         userGame.board = msg.boardBlob;
 
         userGame.updateUsers();
 
+        break;
+      case "message":
+        userGame.chat.newMessage(msg.content, ws.userID);
+        console.log(userGame.chat.messages);
         break;
       default:
         console.log(msg.type);

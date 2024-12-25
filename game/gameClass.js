@@ -2,10 +2,30 @@ const { nanoid } = require("nanoid");
 
 const { games } = require(`${__dirname}/../server`);
 const { serialize } = require("bson");
+
+class Chat {
+  messages = [];
+  game;
+
+  constructor(game) {
+    this.game = game;
+  }
+
+  newMessage(text, authorID) {
+    this.messages.push({
+      authorID,
+      text,
+      time: new Date().getTime(),
+    });
+    this.game.updateUsers();
+  }
+}
+
 class Game {
   code;
-  players = new Map();
   board;
+  players = new Map();
+  chat = new Chat(this);
 
   constructor() {
     do {
@@ -14,10 +34,15 @@ class Game {
   }
 
   data() {
-    const gameObj = {};
-
-    gameObj.board = this.board;
-    gameObj.type = "update";
+    const gameObj = {
+      board: this.board,
+      type: "update",
+      chat: this.chat.messages.map((msg) => ({
+        time: msg.time,
+        content: msg.text,
+        author: this.players.get(msg.authorID).nick,
+      })),
+    };
 
     gameObj.players = Array.from(this.players.values()).map((player) => ({
       nick: player.nick,
