@@ -1,7 +1,8 @@
 const { nanoid } = require("nanoid");
 
 const { games } = require(`${__dirname}/../server`);
-const { serialize } = require("bson");
+const { serialize, deserialize } = require("bson");
+const Player = require("./playerClass");
 
 class Chat {
   messages = [];
@@ -17,7 +18,7 @@ class Chat {
       text,
       time: new Date().getTime(),
     });
-    this.game.updateUsers();
+    this.game.updateAllUsers();
   }
 }
 
@@ -26,6 +27,10 @@ class Game {
   board;
   players = new Map();
   chat = new Chat(this);
+  round = {
+    type: "lobby",
+    endDate: new Date().getTime() + 100000,
+  };
 
   constructor() {
     do {
@@ -33,39 +38,70 @@ class Game {
     } while (games.has(this.code));
   }
 
-  data() {
-    const gameObj = {
+  async roundNormal(duration, painter) {
+    return new Promise((resolve) => {
+      painter.allowPainting = true;
+      this.round = {
+        type: "normal",
+        endDate: new Date().getTime() + duration,
+      };
+      setTimeout(() => {
+        painter.allowPainting = false;
+        resolve();
+      }, duration);
+    });
+  }
+
+  updateData() {
+    return {
       board: this.board,
       type: "update",
+      round: this.round,
       chat: this.chat.messages.map((msg) => ({
         time: msg.time,
         content: msg.text,
         author: this.players.get(msg.authorID).nick,
       })),
+      players: Array.from(this.players.values()).map((player) => ({ nick: player.nick, points: player.points })),
     };
-
-    gameObj.players = Array.from(this.players.values()).map((player) => ({
-      nick: player.nick,
-      points: player.points,
-    }));
-
-    return gameObj;
   }
 
-  updateUsers(exclude = []) {
-    const update = this.data();
+  updateAllUsers() {
+    const update = this.updateData();
+    const playersArr = Array.from(this.players.values()).filter((player) => player.ws);
 
-    const playerIT = this.players.values();
+    playersArr.forEach((player) => {
+      const playerUpdate = { ...update, allowDrawing: player.allowDrawing, isAdmin: player.admin };
+      console.log(playerUpdate);
+      player.ws.send(serialize(playerUpdate));
+    });
+  }
 
-    for (const player of playerIT) {
-      if (exclude.includes(player.id)) {
-        continue;
-      }
+  update(updateBSON, authorID) {
+    const update = deserialize(updateBSON);
 
-      update.drawingMode = player.drawingMode;
+    switch (update.type) {
+      case "board update":
+        this.board = update.boardBlob;
+        this.updateAllUsers();
+        break;
 
-      player.ws.send(serialize(update));
+      case "message":
+        this.chat.newMessage(update.content, authorID);
+        break;
+
+      default:
+        console.log(update.type);
     }
+  }
+
+  addPlayer(nick) {
+    const newPlayer = new Player(nick, this);
+
+    this.players.set(newPlayer.id, newPlayer);
+    this.updateAllUsers();
+
+    return newPlayer;
   }
 }
 module.exports = Game;

@@ -20,26 +20,22 @@ const createGame = (req, res) => {
 
   if (!nickCheck(nick)) {
     console.log("wrong nick");
-    res
-      .status(400)
-      .json({ status: "failed", message: "parameters wrong length" });
+    res.status(400).json({ status: "failed", message: "parameters wrong length" });
     res.end();
     return;
   }
 
-  const createGame = new Game();
-  games.set(createGame.code, createGame);
+  const game = new Game();
+  games.set(game.code, game);
 
-  const adminPlayer = new Player(nick);
-  createGame.players.set(adminPlayer.id, adminPlayer);
+  const adminPlayer = game.addPlayer(nick);
 
-  adminPlayer.drawingMode = true;
+  adminPlayer.allowDrawing = true;
+  adminPlayer.admin = true;
 
   console.log(adminPlayer.id);
   console.log(adminPlayer.code);
 
-  res
-    .status(201)
-    .json({ status: "succes", userID: adminPlayer.id, code: createGame.code });
+  res.status(201).json({ status: "succes", userID: adminPlayer.id, code: game.code });
 };
 module.exports = createGame;

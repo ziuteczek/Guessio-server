@@ -21,9 +21,7 @@ const joinGame = (req, res) => {
 
   if (!nickCheck(nick) || !codeCheck(code)) {
     console.log("wrong nick or code length");
-    res
-      .status(400)
-      .json({ status: "failed", message: "parameters wrong length" });
+    res.status(400).json({ status: "failed", message: "parameters wrong length" });
     res.end();
     return;
   }
@@ -37,11 +35,8 @@ const joinGame = (req, res) => {
     return;
   }
 
-  const newPlayer = new Player(nick);
-  userGame.players.set(newPlayer.id, newPlayer);
+  const newPlayer = userGame.addPlayer(nick);
 
-  res
-    .status(201)
-    .json({ status: "succes", userID: newPlayer.id, code: userGame.code });
+  res.status(201).json({ status: "succes", userID: newPlayer.id, code: userGame.code });
 };
 module.exports = joinGame;

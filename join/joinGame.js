@@ -3,56 +3,39 @@ const { deserialize } = require("bson");
 const { games } = require(`${__dirname}/../server`);
 
 const joinGame = (ws, req) => {
-  ws.userID = req.query.userid;
-  ws.gameID = req.query.code;
+  const userID = req.query.userid;
+  const gameID = req.query.code;
 
-  console.log(ws.userID);
-  console.log(ws.gameID);
+  console.log(userID);
+  console.log(gameID);
 
-  const userGame = games.get(ws.gameID);
+  const userGame = games.get(gameID);
 
-  if (userGame === undefined) {
+  if (!userGame) {
     console.log("no such game exist");
     ws.send(JSON.parse({ status: "failed", message: "no such game exist" }));
     ws.close();
     return;
   }
 
-  const user = userGame.players.get(ws.userID, userGame);
+  const user = userGame.players.get(userID, userGame);
 
-  if (user === undefined) {
+  if (!user) {
     console.log("no such player");
-    console.log(ws.userID);
+    console.log(userID);
     ws.send(JSON.parse({ status: "failed", message: "no such player exist" }));
     ws.close();
     return;
   }
 
   user.ws = ws;
-  
+
+  userGame.updateAllUsers();
   console.log("users updated");
-  userGame.updateUsers();
 
   console.log("web socket connection created");
 
-  ws.on("message", (message) => {
-    const msg = deserialize(message);
-
-    switch (msg.type) {
-      case "board update":
-        userGame.board = msg.boardBlob;
-
-        userGame.updateUsers();
-
-        break;
-      case "message":
-        userGame.chat.newMessage(msg.content, ws.userID);
-        console.log(userGame.chat.messages);
-        break;
-      default:
-        console.log(msg.type);
-    }
-  });
+  ws.on("message", (message) => userGame.update(message, userID));
 
   ws.on("close", () => {
     console.log("web socket connection closed");
