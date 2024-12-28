@@ -30,12 +30,15 @@ const joinGame = (ws, req) => {
 
   user.ws = ws;
 
+  if (userGame.round.type === "lobby") {
+    user.allowDrawing = true;
+  }
+
   userGame.updateAllUsers();
-  console.log("users updated");
 
   console.log("web socket connection created");
 
-  ws.on("message", (message) => userGame.update(message, userID));
+  ws.on("message", (message) => userGame.update(message, user));
 
   ws.on("close", () => {
     console.log("web socket connection closed");

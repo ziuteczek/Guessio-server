@@ -26,11 +26,9 @@ const createGame = (req, res) => {
   }
 
   const game = new Game();
-  games.set(game.code, game);
 
   const adminPlayer = game.addPlayer(nick);
 
-  adminPlayer.allowDrawing = true;
   adminPlayer.admin = true;
 
   console.log(adminPlayer.id);

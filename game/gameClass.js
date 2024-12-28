@@ -36,17 +36,35 @@ class Game {
     do {
       this.code = nanoid(6);
     } while (games.has(this.code));
+    games.set(this.code, this);
+  }
+  async startGame() {
+    this.players.forEach((player) => (player.allowDrawing = false));
+
+    for (const player of this.players.values()) {
+      console.log("new round starts");
+
+      this.board = undefined;
+      this.updateAllUsers();
+
+      await this.roundNormal(24000, player);
+    }
   }
 
-  async roundNormal(duration, painter) {
+  roundNormal(duration, painter) {
     return new Promise((resolve) => {
-      painter.allowPainting = true;
+      painter.allowDrawing = true;
+
       this.round = {
         type: "normal",
         endDate: new Date().getTime() + duration,
       };
+
+      this.updateAllUsers();
+
       setTimeout(() => {
-        painter.allowPainting = false;
+        painter.allowDrawing = false;
+        this.updateAllUsers();
         resolve();
       }, duration);
     });
@@ -72,12 +90,11 @@ class Game {
 
     playersArr.forEach((player) => {
       const playerUpdate = { ...update, allowDrawing: player.allowDrawing, isAdmin: player.admin };
-      console.log(playerUpdate);
       player.ws.send(serialize(playerUpdate));
     });
   }
 
-  update(updateBSON, authorID) {
+  update(updateBSON, author) {
     const update = deserialize(updateBSON);
 
     switch (update.type) {
@@ -87,7 +104,14 @@ class Game {
         break;
 
       case "message":
-        this.chat.newMessage(update.content, authorID);
+        this.chat.newMessage(update.content, author.id);
+        break;
+
+      case "start game":
+        if (!author.admin || this.round.type != "lobby") {
+          return;
+        }
+        this.startGame();
         break;
 
       default:
